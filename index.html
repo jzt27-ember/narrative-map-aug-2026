@@ -3,61 +3,14 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>The Ember Narrative Map — Sprint Prototype</title>
-<meta name="description" content="Internal sprint prototype: a clickable world map surfacing Ember's energy-transition narratives by country, styled to Ember's data viz guide." />
+<title>The Ember Narrative Map — Country Dossier</title>
+<meta name="description" content="Personalized country dossier surfacing Ember's energy-transition narratives, official record vs. ground signal, and the levers a planner holds." />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-
-<div class="wrap">
-  <header>
-    <div class="eyebrow"><span class="dot"></span> Data Tool Sprint — internal prototype</div>
-    <h1>Clean power is gaining ground, but fossil fuels still lead in most Ember focus countries</h1>
-    <p>Click a country to see its energy-transition story: the headline finding, the clean-vs-fossil split, and the report it's drawn from. Colour runs from Ember's fossil-fuel tone to its renewables green — that split is the whole story in one glance. Grey countries aren't wired up yet; that's next sprint's backlog.</p>
-  </header>
-
-  <div class="layout">
-    <div class="map-card">
-      <h2>Clean electricity's share of generation, by country</h2>
-      <p class="chart-subtitle">Share of electricity generation from clean sources (%), 2025</p>
-      <div id="map-container">
-        <div class="loading-msg" id="loading-msg">Loading world geometry…</div>
-        <svg id="map-svg" viewBox="0 0 960 500" role="img" aria-label="World map. Countries with narrative data are coloured from Ember's fossil-fuel tone to renewables green by clean electricity share; other countries are grey."></svg>
-      </div>
-      <div class="legend">
-        <span>Fossil-fuel led</span>
-        <span class="legend-bar" aria-hidden="true"></span>
-        <span>Renewables-led</span>
-        <span style="margin-left:8px;"><span class="legend-swatch" aria-hidden="true"></span>Not in this sprint yet</span>
-      </div>
-
-      <div class="quickjump" id="quickjump" aria-label="Jump to a country"></div>
-
-      <p class="map-footnote">Source: country pages, Ember (ember-energy.org), Aug 2026. Note: this prototype uses a standard Natural Earth basemap, not Ember's standard UN CartoTile basemap — per Ember's map guidance, swap to CartoTile and run the political-sensitivity review before this goes beyond an internal demo.</p>
-    </div>
-
-    <aside class="panel" id="panel" aria-live="polite">
-      <div class="panel-empty" id="panel-empty">
-        <div class="glyph">◐</div>
-        <p>Select a country on the map — or use the list below it — to load its narrative.</p>
-      </div>
-      <div class="panel-content" id="panel-content"></div>
-    </aside>
-  </div>
-
-  <footer>
-    Built for the internal data tool sprint, styled to Ember's data viz guide (colour palette, Poppins type, chart-title and sourcing conventions). This is a styling prototype, not a live product — swap the <code>NARRATIVES</code> object for a real data source to take it further.
-    <div class="footnote">Source: country pages, Ember. Country narratives paraphrased from ember-energy.org as of 24 Aug 2026.</div>
-  </footer>
-</div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
-<script src="data/narratives.js"></script>
-<script src="api/llm.js"></script>
-<script src="js/app.js"></script>
+<div id="root"></div>
+<script type="module" src="/src/main.jsx"></script>
 </body>
 </html>

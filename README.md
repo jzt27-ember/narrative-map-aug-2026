@@ -1,36 +1,49 @@
 # narrative-map-aug-2026
 
-Internal sprint prototype: a clickable world map surfacing Ember's energy-transition narratives by country.
+Personalized country dossier surfacing Ember's energy-transition narratives: official record vs. "ground signal" per claim, and the levers a planner holds vs. doesn't.
 
-Static site, no build step. Open [index.html](index.html) directly for map + panel browsing. To use the "Draft narrative with AI" button on countries not yet in the dataset, run the local server instead (see below) so a Gemini API key can be held server-side.
+React + Vite + Tailwind. Requires a build step now (this replaced an earlier zero-build vanilla JS/D3 map prototype).
+
+## Running it
+
+```
+npm install
+npm run dev
+```
+
+Open the printed local URL (typically `http://localhost:5173`).
+
+- `npm run build` — production build to `dist/`
+- `npm run preview` — serve the production build locally
 
 ## Structure
 
-- [index.html](index.html) — markup only
-- [css/styles.css](css/styles.css) — design/styling (Ember data viz guide tokens)
-- [data/narratives.js](data/narratives.js) — per-country narrative data (`NARRATIVES`, keyed by ISO numeric country code)
-- [js/app.js](js/app.js) — map rendering, quick-jump list, panel behaviour
-- [api/llm.js](api/llm.js) — calls the `/api/generate-narrative` proxy (see `server.js`) to draft narrative prose with Gemini. Never calls a provider directly from browser JS with a bare key.
-- [server.js](server.js) — zero-dependency Node server: serves the static site and proxies narrative-drafting requests to Gemini, holding `GEMINI_API_KEY` server-side.
+- [index.html](index.html) — Vite entry point, mounts `#root`
+- [src/main.jsx](src/main.jsx) — React root
+- [src/CountryLanding.jsx](src/CountryLanding.jsx) — the dossier page: header (country/role/tier/archetype/horizon), stat grid, per-narrative official-record-vs-ground-signal cards, levers held/elsewhere. Data-driven — swap the `data` prop for a different country. Currently rendered with its bundled `vietnam` example data; only that country has data in this shape so far.
+- [data/narratives.js](data/narratives.js), [data/sources/](data/sources/) — content from the earlier map prototype (headline/narrative/note + stats, and free-text source documents per country). Not yet in the shape `CountryLanding` expects (official/ground-signal pairs, levers) — kept for reference and as raw material for building out more countries' dossiers.
+- [server.js](server.js), [api/llm.js](api/llm.js) — Gemini-backed narrative drafting proxy from the earlier prototype. **Currently orphaned**: not wired into the new dossier UI. Kept in case AI-assisted drafting gets reintroduced against the new data shape.
 
-## Using the AI drafting feature
+## Deployment
+
+Pushing to `main` builds and deploys automatically via [.github/workflows/deploy.yml](.github/workflows/deploy.yml) to GitHub Pages (repo Pages settings are configured to deploy from GitHub Actions, not by serving the repo directly — the built `index.html` needs bundled JS, so raw-file serving no longer works).
+
+## Using the (currently disconnected) AI drafting feature
+
+This still works standalone via `node server.js`, but isn't called from the current UI.
 
 1. Get a free Gemini API key at [aistudio.google.com/apikey](https://aistudio.google.com/apikey).
 2. Copy `.env.example` to `.env` and paste the key in as `GEMINI_API_KEY=...`. `.env` is gitignored — it never gets committed.
-3. Run `node server.js` (or `npm start`), then open `http://localhost:8787`.
-4. Click any grey (not-yet-wired) country on the map and use "Draft narrative with AI (Gemini)" to get a first-pass headline/narrative/note.
+3. Run `node server.js` (or `npm start`), then `POST` to `http://localhost:8787/api/generate-narrative` with `{"name": "<country>"}`.
 
 ### Grounding drafts in real sources
 
-By default, drafts come from the model's general knowledge and are **unverified** —
-fact-check against the real Ember country page before copying a draft's fields
-into `data/narratives.js`, and fill in real clean/wind+solar/fossil percentages
-yourself (the model is instructed not to invent precise stats).
+By default, drafts come from the model's general knowledge and are **unverified**.
 
 To ground a draft in real source text instead, drop a file in
-`data/sources/<country-slug>.txt` (see [data/sources/README.md](data/sources/README.md))
+`data/sources/<country-slug>.txt` or `.md` (see [data/sources/README.md](data/sources/README.md))
 — the server will use it as the only source of facts for that country, and the
-panel will flag the draft as sourced from your document.
+response will flag the draft as sourced from your document (`groundedInLocalDoc: true`).
 
 Alternatively, Gemini's Search-grounding tool can pull live web results, but it
 requires a billing-enabled Google Cloud project (the free API tier doesn't
