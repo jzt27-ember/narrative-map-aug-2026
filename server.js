@@ -10,7 +10,8 @@ const path = require("path");
 
 const ROOT = __dirname;
 const PORT = process.env.PORT || 8787;
-const GEMINI_MODEL = "gemini-2.5-flash";
+const GEMINI_MODEL = "gemini-3.6-flash";
+const SOURCES_DIR = path.join(ROOT, "data", "sources");
 
 function loadEnv(){
   const envPath = path.join(ROOT, ".env");
@@ -67,7 +68,42 @@ async function handleGenerate(req, res){
       return;
     }
 
-    const prompt = `You are drafting a short energy-transition narrative for "${name}" in the style of Ember (ember-energy.org) country pages.
+    function slugify(str){
+      return str.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+    }
+
+    function loadSourceDoc(countryName){
+      const slug = slugify(countryName);
+      for (const ext of [".txt", ".md"]){
+        const p = path.join(SOURCES_DIR, slug + ext);
+        if (fs.existsSync(p)) return fs.readFileSync(p, "utf8");
+      }
+      return null;
+    }
+
+    const sourceDoc = loadSourceDoc(name);
+    // Search grounding needs a billing-enabled Gemini project; off by default so
+    // drafting doesn't 429 for keys without it. Flip ENABLE_SEARCH_GROUNDING=true once set up.
+    const useSearchGrounding = !sourceDoc && process.env.ENABLE_SEARCH_GROUNDING === "true";
+
+    const prompt = sourceDoc
+      ? `You are drafting a short energy-transition narrative for "${name}" in the style of Ember (ember-energy.org) country pages.
+Base your answer ONLY on the SOURCE DOCUMENT below — do not use outside knowledge or invent facts not supported by it.
+
+SOURCE DOCUMENT:
+"""
+${sourceDoc}
+"""
+
+Return ONLY valid JSON, no markdown fences, matching exactly this shape:
+{"headline": "...", "narrative": "...", "note": "..."}
+
+Rules:
+- "headline": one sentence, present tense, the single most striking energy-transition fact from the source document.
+- "narrative": 2-3 sentences of context (clean vs fossil generation trend, a notable recent shift), drawn only from the source document.
+- "note": one sentence, a secondary interesting fact from the source document.
+- If the source document doesn't cover something, leave it out rather than guessing.`
+      : `You are drafting a short energy-transition narrative for "${name}" in the style of Ember (ember-energy.org) country pages.
 Return ONLY valid JSON, no markdown fences, matching exactly this shape:
 {"headline": "...", "narrative": "...", "note": "..."}
 
@@ -75,18 +111,49 @@ Rules:
 - "headline": one sentence, present tense, the single most striking energy-transition fact you're confident about for ${name}.
 - "narrative": 2-3 sentences of context (clean vs fossil generation trend, a notable recent shift).
 - "note": one sentence, a secondary interesting fact.
-- No source documents are attached yet, so this is a first-pass draft that a human will fact-check against real Ember data before publishing. Prefer qualitative language ("a majority", "a growing share") over precise numbers. If you do state a specific number, append " (verify)" right after it.`;
+- No source document is attached for ${name} yet, so this is a first-pass draft that a human will fact-check against real Ember data before publishing. Prefer qualitative language ("a majority", "a growing share") over precise numbers. If you do state a specific number, append " (verify)" right after it.`;
 
-    try {
+    async function callGemini(useJsonMode){
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`;
-      const geminiRes = await fetch(url, {
+      const generationConfig = { temperature: 0.4 };
+      if (useJsonMode) generationConfig.responseMimeType = "application/json";
+      const body = {
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig,
+      };
+      if (useSearchGrounding) body.tools = [{ google_search: {} }];
+      return fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.4, responseMimeType: "application/json" },
-        }),
+        body: JSON.stringify(body),
       });
+    }
+
+    function extractSources(candidate){
+      const chunks = candidate && candidate.groundingMetadata && candidate.groundingMetadata.groundingChunks;
+      if (!Array.isArray(chunks)) return [];
+      return chunks
+        .map(c => c.web && { title: c.web.title, url: c.web.uri })
+        .filter(Boolean);
+    }
+
+    function stripFences(text){
+      return text.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/, "").trim();
+    }
+
+    try {
+      let geminiRes = await callGemini(true);
+
+      // Some Gemini versions reject responseMimeType combined with tools; retry plain.
+      if (geminiRes.status === 400){
+        const errBody = await geminiRes.text();
+        if (/mime.?type|response_schema|tool/i.test(errBody)){
+          geminiRes = await callGemini(false);
+        } else {
+          sendJson(res, 400, { error: `Gemini API error (400): ${errBody}` });
+          return;
+        }
+      }
 
       if (!geminiRes.ok){
         const errText = await geminiRes.text();
@@ -95,9 +162,9 @@ Rules:
       }
 
       const data = await geminiRes.json();
-      const text = data && data.candidates && data.candidates[0] && data.candidates[0].content
-        && data.candidates[0].content.parts && data.candidates[0].content.parts[0]
-        && data.candidates[0].content.parts[0].text;
+      const candidate = data && data.candidates && data.candidates[0];
+      const text = candidate && candidate.content && candidate.content.parts
+        && candidate.content.parts.map(p => p.text || "").join("");
 
       if (!text){
         sendJson(res, 502, { error: "Gemini returned no text (it may have blocked the response)." });
@@ -106,11 +173,15 @@ Rules:
 
       let draft;
       try {
-        draft = JSON.parse(text);
+        draft = JSON.parse(stripFences(text));
       } catch {
         sendJson(res, 502, { error: "Gemini response was not valid JSON.", raw: text });
         return;
       }
+
+      const sources = extractSources(candidate);
+      if (sources.length) draft.sources = sources;
+      if (sourceDoc) draft.groundedInLocalDoc = true;
 
       sendJson(res, 200, { draft });
     } catch (err){

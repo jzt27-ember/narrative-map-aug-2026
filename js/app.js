@@ -166,13 +166,22 @@ async function runGenerate(name){
   try {
     const draft = await generateNarrative({ name });
     const draftJson = JSON.stringify(draft, null, 2);
+    const sourcesHtml = Array.isArray(draft.sources) && draft.sources.length
+      ? `<div class="ai-sources">
+          <span class="hint">Grounded on:</span>
+          <ul>${draft.sources.map(s => `<li><a href="${s.url}" target="_blank" rel="noopener">${escapeHtml(s.title || s.url)}</a></li>`).join("")}</ul>
+        </div>`
+      : draft.groundedInLocalDoc
+        ? `<div class="ai-sources"><span class="hint">Drafted from your uploaded source document for this country.</span></div>`
+        : "";
     resultEl.innerHTML = `
       <div class="ai-draft">
         <span class="badge-ai">AI draft — unverified, review before publishing</span>
         <h4>${escapeHtml(draft.headline || "")}</h4>
         <p class="narrative">${escapeHtml(draft.narrative || "")}</p>
         <div class="field-note">${escapeHtml(draft.note || "")}</div>
-        <p class="hint">No source documents are attached yet, so treat this as a starting point: fact-check against Ember's country page, fill in real clean/wind+solar/fossil figures, then paste into <code>data/narratives.js</code>.</p>
+        ${sourcesHtml}
+        <p class="hint">Treat this as a starting point: fact-check against Ember's country page, fill in real clean/wind+solar/fossil figures, then paste into <code>data/narratives.js</code>.</p>
         <pre class="draft-json">${escapeHtml(draftJson)}</pre>
       </div>
     `;

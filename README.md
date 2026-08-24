@@ -20,4 +20,19 @@ Static site, no build step. Open [index.html](index.html) directly for map + pan
 3. Run `node server.js` (or `npm start`), then open `http://localhost:8787`.
 4. Click any grey (not-yet-wired) country on the map and use "Draft narrative with AI (Gemini)" to get a first-pass headline/narrative/note.
 
-Drafts are generated with no source documents attached, so they're **unverified** — fact-check against the real Ember country page before copying a draft's fields into `data/narratives.js`, and fill in real clean/wind+solar/fossil percentages yourself (the model is instructed not to invent precise stats). Grounding drafts in real Ember documents (RAG) is the planned next step.
+### Grounding drafts in real sources
+
+By default, drafts come from the model's general knowledge and are **unverified** —
+fact-check against the real Ember country page before copying a draft's fields
+into `data/narratives.js`, and fill in real clean/wind+solar/fossil percentages
+yourself (the model is instructed not to invent precise stats).
+
+To ground a draft in real source text instead, drop a file in
+`data/sources/<country-slug>.txt` (see [data/sources/README.md](data/sources/README.md))
+— the server will use it as the only source of facts for that country, and the
+panel will flag the draft as sourced from your document.
+
+Alternatively, Gemini's Search-grounding tool can pull live web results, but it
+requires a billing-enabled Google Cloud project (the free API tier doesn't
+include it). Once billing is set up, set `ENABLE_SEARCH_GROUNDING=true` in `.env`
+to turn it on for any country without a local source file.
