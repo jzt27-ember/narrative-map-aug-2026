@@ -1,12 +1,10 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import CountryLanding from "./CountryLanding.jsx";
+import App from "./App.jsx";
 import "./index.css";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <div className="min-h-screen py-8">
-      <CountryLanding />
-    </div>
+    <App />
   </React.StrictMode>
 );
