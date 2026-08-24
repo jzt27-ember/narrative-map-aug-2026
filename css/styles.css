@@ -1,0 +1,389 @@
+/* ==========================================================================
+   Tokens pulled from Ember's internal data viz guide (Aug 2026):
+   - Core palette: Renewables (greens) vs Fossil fuels (browns/greys)
+   - Neutrals: navy text, slate labels, light chart background
+   - Font: Poppins (Ember's Flourish + R chart font)
+   - Highlights: reserved for interactive/emphasis states only
+   ========================================================================== */
+:root{
+  --bg: #F7F7F7;             /* Ember "chart background" */
+  --surface: #FFFFFF;        /* Ember "pop-up box background" */
+  --border: #E4E6EA;
+  --border-strong: #DCDEE5;
+
+  --text-title: #1B2236;     /* titles, subtitles, legend/text annotations */
+  --text-body: #40485E;
+  --text-muted: #646E86;     /* axis labels, source, footnotes */
+  --text-faint: #9AA1B0;
+
+  --renew-dark: #0B6638;
+  --renew-mid: #13CE74;
+  --renew-pale: #D3EAD3;
+
+  --fossil-dark: #553E39;
+  --fossil-mid: #857572;
+  --fossil-pale: #B8B0AF;
+
+  --values-navy: #203772;
+
+  --highlight-blue: #37A6E6;
+  --highlight-amber: #FFC400;
+  --highlight-orange: #ED480D;
+
+  --unlit: #EDEEF1;
+  --unlit-stroke: #D6D9DE;
+
+  --radius: 10px;
+  font-size: 16px;
+}
+
+*{ box-sizing: border-box; }
+html,body{ margin:0; padding:0; }
+body{
+  background: var(--bg);
+  color: var(--text-body);
+  font-family: 'Poppins', -apple-system, sans-serif;
+  min-height: 100vh;
+}
+
+a{ color: var(--highlight-blue); text-decoration: none; }
+a:hover{ text-decoration: underline; }
+
+:focus-visible{
+  outline: 2px solid var(--highlight-blue);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+.wrap{
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 28px 56px;
+}
+
+/* ---------- Header ---------- */
+header{
+  padding: 40px 0 26px;
+  border-bottom: 1px solid var(--border-strong);
+  margin-bottom: 28px;
+}
+.eyebrow{
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.eyebrow .dot{
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--highlight-orange);
+  flex-shrink: 0;
+}
+h1{
+  font-weight: 600;
+  font-size: clamp(1.7rem, 3.4vw, 2.5rem);
+  line-height: 1.15;
+  color: var(--text-title);
+  margin: 0 0 14px;
+  max-width: 22ch;
+}
+h1 span{ color: var(--renew-dark); }
+header p{
+  color: var(--text-muted);
+  max-width: 64ch;
+  font-size: 0.98rem;
+  line-height: 1.65;
+  margin: 0;
+}
+
+/* ---------- Layout ---------- */
+.layout{
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 22px;
+  align-items: start;
+}
+@media (max-width: 900px){
+  .layout{ grid-template-columns: 1fr; }
+}
+
+/* ---------- Map card ---------- */
+.map-card{
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  padding: 22px 22px 18px;
+}
+.map-card h2{
+  font-weight: 600;
+  font-size: 1.15rem;
+  color: var(--text-title);
+  margin: 0 0 4px;
+  line-height: 1.35;
+}
+.map-card .chart-subtitle{
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin: 0 0 16px;
+}
+
+#map-container{ width: 100%; }
+#map-svg{ width: 100%; height: auto; display: block; }
+
+.country-shape{
+  stroke: var(--surface);
+  stroke-width: 0.6;
+  cursor: pointer;
+  transition: filter 0.12s ease, stroke-width 0.12s ease;
+}
+.country-shape.unlit{
+  fill: var(--unlit);
+  stroke: var(--unlit-stroke);
+}
+.country-shape.unlit:hover{
+  fill: #E2E4E9;
+}
+.country-shape.lit:hover{
+  filter: brightness(1.1);
+}
+.country-shape.selected{
+  stroke: var(--highlight-blue);
+  stroke-width: 1.8;
+}
+
+@media (prefers-reduced-motion: reduce){
+  .country-shape{ transition: none !important; }
+}
+
+/* Legend */
+.legend{
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+.legend-bar{
+  width: 150px;
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--fossil-dark), var(--fossil-pale) 48%, var(--renew-dark));
+}
+.legend-swatch{
+  width: 10px; height: 10px; border-radius: 2px;
+  background: var(--unlit);
+  border: 1px solid var(--unlit-stroke);
+  display: inline-block;
+  margin-right: 6px;
+  vertical-align: -1px;
+}
+
+.map-footnote{
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: var(--text-faint);
+}
+
+/* ---------- Panel ---------- */
+.panel{
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  padding: 24px;
+  min-height: 420px;
+  position: sticky;
+  top: 20px;
+}
+
+.panel-empty{
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  color: var(--text-faint);
+  min-height: 370px;
+}
+.panel-empty .glyph{
+  font-size: 26px;
+  margin-bottom: 12px;
+  color: var(--fossil-pale);
+}
+.panel-empty p{
+  font-size: 0.9rem;
+  line-height: 1.6;
+  max-width: 30ch;
+}
+
+.panel-content{ display: none; }
+.panel-content.active{ display: block; }
+
+.panel-kicker{
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  margin-bottom: 8px;
+}
+.panel h3{
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: var(--text-title);
+  margin: 0 0 8px;
+  line-height: 1.4;
+}
+
+.stat-row{
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin: 18px 0;
+}
+.stat{
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 8px;
+  text-align: center;
+}
+.stat .num{
+  font-size: 1.15rem;
+  font-weight: 600;
+  display: block;
+}
+.stat .lbl{
+  font-size: 10px;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  display: block;
+  margin-top: 3px;
+}
+.stat.clean .num{ color: var(--renew-dark); }
+.stat.mix .num{ color: var(--highlight-blue); }
+.stat.fossil .num{ color: var(--fossil-dark); }
+
+.mix-bar{
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+  display: flex;
+  margin-bottom: 20px;
+  border: 1px solid var(--border);
+}
+.mix-bar span{ display:block; height: 100%; }
+
+.panel p.narrative{
+  font-size: 0.92rem;
+  line-height: 1.68;
+  color: var(--text-body);
+  margin: 0 0 18px;
+}
+
+.panel .field-note{
+  border-left: 2px solid var(--highlight-blue);
+  padding: 3px 0 3px 14px;
+  margin: 0 0 20px;
+  font-size: 0.84rem;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+.field-note cite{
+  display: block;
+  font-style: normal;
+  font-size: 11px;
+  color: var(--text-faint);
+  margin-top: 6px;
+}
+
+.panel-links{
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.panel-links a{
+  font-size: 0.86rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--values-navy);
+  font-weight: 500;
+}
+.panel-links a::after{ content: "↗"; font-size: 0.8em; }
+
+.panel-missing p{
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+.badge-tbd{
+  display: inline-block;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  border: 1px dashed var(--fossil-pale);
+  border-radius: 20px;
+  padding: 3px 10px;
+  margin-bottom: 14px;
+}
+
+/* ---------- Country quick-jump ---------- */
+.quickjump{
+  margin-top: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.quickjump button{
+  font-family: 'Poppins', sans-serif;
+  font-size: 12.5px;
+  font-weight: 500;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  color: var(--text-muted);
+  padding: 6px 12px;
+  border-radius: 20px;
+  cursor: pointer;
+}
+.quickjump button:hover{
+  border-color: var(--highlight-blue);
+  color: var(--text-title);
+}
+.quickjump button[aria-pressed="true"]{
+  background: var(--highlight-blue);
+  color: #FFFFFF;
+  border-color: var(--highlight-blue);
+  font-weight: 600;
+}
+
+footer{
+  margin-top: 36px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border-strong);
+  color: var(--text-faint);
+  font-size: 0.8rem;
+  line-height: 1.7;
+}
+footer a{ color: var(--text-muted); }
+footer .footnote{ margin-top: 6px; }
+
+.loading-msg{
+  color: var(--text-faint);
+  font-size: 12px;
+  padding: 40px 0;
+  text-align: center;
+}
