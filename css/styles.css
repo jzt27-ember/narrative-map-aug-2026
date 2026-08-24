@@ -33,7 +33,7 @@
   --unlit: #EDEEF1;
   --unlit-stroke: #D6D9DE;
 
-  --radius: 10px;
+  --radius: 0px;
   font-size: 16px;
 }
 
@@ -52,7 +52,6 @@ a:hover{ text-decoration: underline; }
 :focus-visible{
   outline: 2px solid var(--highlight-blue);
   outline-offset: 3px;
-  border-radius: 4px;
 }
 
 .wrap{
@@ -79,7 +78,7 @@ header{
   margin-bottom: 14px;
 }
 .eyebrow .dot{
-  width: 7px; height: 7px; border-radius: 50%;
+  width: 7px; height: 7px;
   background: var(--highlight-orange);
   flex-shrink: 0;
 }
@@ -172,11 +171,10 @@ header p{
 .legend-bar{
   width: 150px;
   height: 8px;
-  border-radius: 4px;
   background: linear-gradient(90deg, var(--fossil-dark), var(--fossil-pale) 48%, var(--renew-dark));
 }
 .legend-swatch{
-  width: 10px; height: 10px; border-radius: 2px;
+  width: 10px; height: 10px;
   background: var(--unlit);
   border: 1px solid var(--unlit-stroke);
   display: inline-block;
@@ -252,7 +250,6 @@ header p{
 .stat{
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: 8px;
   padding: 10px 8px;
   text-align: center;
 }
@@ -275,7 +272,6 @@ header p{
 
 .mix-bar{
   height: 8px;
-  border-radius: 4px;
   overflow: hidden;
   display: flex;
   margin-bottom: 20px;
@@ -336,7 +332,6 @@ header p{
   text-transform: uppercase;
   color: var(--text-faint);
   border: 1px dashed var(--fossil-pale);
-  border-radius: 20px;
   padding: 3px 10px;
   margin-bottom: 14px;
 }
@@ -356,7 +351,6 @@ header p{
   border: 1px solid var(--border-strong);
   color: var(--text-muted);
   padding: 6px 12px;
-  border-radius: 20px;
   cursor: pointer;
 }
 .quickjump button:hover{
