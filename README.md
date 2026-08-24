@@ -36,6 +36,23 @@ This still works standalone via `node server.js`, but isn't called from the curr
 2. Copy `.env.example` to `.env` and paste the key in as `GEMINI_API_KEY=...`. `.env` is gitignored — it never gets committed.
 3. Run `node server.js` (or `npm start`), then `POST` to `http://localhost:8787/api/generate-narrative` with `{"name": "<country>"}`.
 
+### Weekly hot-topic analysis
+
+`POST /api/hot-topics` with `{"name": "<country>"}` (optionally `"startDate"`/`"endDate"`, ISO dates — defaults to the last 7 days) runs [data/prompts/hot-topic-framework.md](data/prompts/hot-topic-framework.md) against Gemini: it scores candidate energy-system developments in the monitoring window and returns the top 3, ranked, each with a hotness score, the underlying issue, its implication, and an Ember-evidence-based recommendation.
+
+```json
+{
+  "country": "Thailand",
+  "monitoringPeriod": { "start": "2026-08-17", "end": "2026-08-24" },
+  "grounded": true,
+  "issues": [
+    { "rank": 1, "headline": "...", "category": "...", "hotnessScore": 89, "issue": "...", "implication": "...", "emberRecommendation": "..." }
+  ]
+}
+```
+
+Like narrative drafting, this only has real news to work with if it's grounded — either via a `data/sources/<country-slug>` file (used as the candidate-issue pool) or `ENABLE_SEARCH_GROUNDING=true`. With neither, the response sets `"grounded": false` and includes a `"warning"` — the issues returned are the model's general knowledge, not an actual scan of the week's news, and shouldn't be trusted as-is.
+
 ### Grounding drafts in real sources
 
 By default, drafts come from the model's general knowledge and are **unverified**.
