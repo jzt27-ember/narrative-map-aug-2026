@@ -17,7 +17,7 @@ function colorFor(clean){
 
 let selectedId = null;
 
-const WORLD_ATLAS_URL = "https://raw.githubusercontent.com/topojson/world-atlas/master/countries-110m.json";
+const WORLD_ATLAS_URL = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
 
 d3.json(WORLD_ATLAS_URL).then(topology => {
   document.getElementById("loading-msg").style.display = "none";
@@ -44,11 +44,11 @@ d3.json(WORLD_ATLAS_URL).then(topology => {
       const info = NARRATIVES[+d.id];
       return info ? `${info.name}: ${info.clean}% clean electricity. Show narrative.` : null;
     })
-    .on("click", (event, d) => selectCountry(+d.id))
+    .on("click", (event, d) => selectCountry(+d.id, d.properties && d.properties.name))
     .on("keydown", (event, d) => {
       if (event.key === "Enter" || event.key === " "){
         event.preventDefault();
-        selectCountry(+d.id);
+        selectCountry(+d.id, d.properties && d.properties.name);
       }
     });
 
@@ -79,7 +79,7 @@ function buildQuickJump(){
 /* =========================================================================
    PANEL RENDERING
    ========================================================================= */
-function selectCountry(id){
+function selectCountry(id, countryName){
   selectedId = id;
 
   d3.selectAll(".country-shape").classed("selected", false);
@@ -96,13 +96,17 @@ function selectCountry(id){
   contentEl.classList.add("active");
 
   if (!info){
+    const name = countryName || `Country ${id}`;
     contentEl.innerHTML = `
       <div class="panel-missing">
         <span class="badge-tbd">Not in this sprint yet</span>
         <h3>No narrative loaded</h3>
-        <p>This country isn't wired into the demo dataset. Add an entry to the <code>NARRATIVES</code> object (keyed by ISO numeric country code) to light it up on the map.</p>
+        <p>${escapeHtml(name)} isn't wired into the demo dataset. Add an entry to the <code>NARRATIVES</code> object (keyed by ISO numeric country code) to light it up on the map.</p>
+        <button type="button" class="btn-generate" id="btn-generate">Draft narrative with AI (Gemini)</button>
+        <div id="generate-result"></div>
       </div>
     `;
+    document.getElementById("btn-generate").addEventListener("click", () => runGenerate(name));
     return;
   }
 
@@ -137,4 +141,45 @@ function selectCountry(id){
       ${reportHtml}
     </div>
   `;
+}
+
+/* =========================================================================
+   AI-ASSISTED DRAFTING (Gemini, via api/llm.js -> server.js proxy)
+   Drafts prose only — no fabricated stats. Always unverified until a human
+   checks it against real Ember data and adds it to data/narratives.js.
+   ========================================================================= */
+function escapeHtml(str){
+  const div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+async function runGenerate(name){
+  const resultEl = document.getElementById("generate-result");
+  const btn = document.getElementById("btn-generate");
+  if (!resultEl || !btn) return;
+
+  btn.disabled = true;
+  btn.textContent = "Drafting…";
+  resultEl.innerHTML = "";
+
+  try {
+    const draft = await generateNarrative({ name });
+    const draftJson = JSON.stringify(draft, null, 2);
+    resultEl.innerHTML = `
+      <div class="ai-draft">
+        <span class="badge-ai">AI draft — unverified, review before publishing</span>
+        <h4>${escapeHtml(draft.headline || "")}</h4>
+        <p class="narrative">${escapeHtml(draft.narrative || "")}</p>
+        <div class="field-note">${escapeHtml(draft.note || "")}</div>
+        <p class="hint">No source documents are attached yet, so treat this as a starting point: fact-check against Ember's country page, fill in real clean/wind+solar/fossil figures, then paste into <code>data/narratives.js</code>.</p>
+        <pre class="draft-json">${escapeHtml(draftJson)}</pre>
+      </div>
+    `;
+  } catch (err){
+    resultEl.innerHTML = `<p class="error-msg">Couldn't generate a draft: ${escapeHtml(err.message)}</p>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Draft narrative with AI (Gemini)";
+  }
 }

@@ -336,6 +336,64 @@ header p{
   margin-bottom: 14px;
 }
 
+.btn-generate{
+  font-family: 'Poppins', sans-serif;
+  font-size: 12.5px;
+  font-weight: 600;
+  background: var(--values-navy);
+  color: #FFFFFF;
+  border: none;
+  padding: 9px 14px;
+  cursor: pointer;
+}
+.btn-generate:hover{ filter: brightness(1.12); }
+.btn-generate:disabled{ opacity: 0.6; cursor: default; }
+
+.ai-draft{
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--border-strong);
+}
+.ai-draft h4{
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--text-title);
+  margin: 10px 0 8px;
+  line-height: 1.4;
+}
+.badge-ai{
+  display: inline-block;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #FFFFFF;
+  background: var(--highlight-amber);
+  padding: 3px 10px;
+}
+.ai-draft .hint{
+  font-size: 0.8rem;
+  color: var(--text-faint);
+  line-height: 1.55;
+}
+.draft-json{
+  background: var(--bg);
+  border: 1px solid var(--border);
+  padding: 12px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text-body);
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-x: auto;
+}
+.error-msg{
+  color: var(--highlight-orange);
+  font-size: 0.85rem;
+  line-height: 1.55;
+  margin-top: 12px;
+}
+
 /* ---------- Country quick-jump ---------- */
 .quickjump{
   margin-top: 16px;

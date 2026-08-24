@@ -1,0 +1,7 @@
+{
+  "name": "narrative-map-aug-2026",
+  "private": true,
+  "scripts": {
+    "start": "node server.js"
+  }
+}

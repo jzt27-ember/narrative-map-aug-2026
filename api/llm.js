@@ -1,17 +1,24 @@
 /* =========================================================================
-   LLM API — placeholder
-   Not wired in yet. This is where narrative generation/summarisation would
-   plug in once this prototype graduates past hardcoded data/narratives.js.
+   LLM API — Gemini-backed narrative drafting
+   Calls the local proxy in server.js, which holds GEMINI_API_KEY
+   server-side. Never call a provider directly from this browser file with
+   a bare API key — that exposes it to anyone who opens the page.
 
-   Do NOT call a provider (Anthropic, OpenAI, etc.) directly from this
-   client-side file with a bare API key — that exposes the key to anyone who
-   opens the page. Route requests through a small backend/serverless proxy
-   that holds the key server-side, and have this file call that proxy.
-
-   Expected shape once wired up:
-     generateNarrative({ name, clean, windSolar, fossil }) -> Promise<string>
+   No source documents are wired in yet, so drafts are unverified and must
+   be fact-checked against real Ember data before going into
+   data/narratives.js. Adding document grounding (RAG) is next.
    ========================================================================= */
 
-async function generateNarrative(country){
-  throw new Error("generateNarrative() is not implemented yet — wire this up to a backend proxy that calls the LLM API.");
+async function generateNarrative({ name }){
+  const res = await fetch("/api/generate-narrative", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name }),
+  });
+
+  const data = await res.json();
+  if (!res.ok){
+    throw new Error(data.error || `Request failed (${res.status})`);
+  }
+  return data.draft;
 }
