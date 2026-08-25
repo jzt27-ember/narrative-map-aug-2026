@@ -1,7 +1,15 @@
 import React, { useEffect, useRef, useState } from "react";
-import { GEO } from "./data/asiaGeo.js";
+import { TILES, COLS, ROWS } from "./data/asiaTiles.js";
 import { THEMES, D, STATS_ONLY, CH, CHL } from "./data/asiaDossiers.js";
 import "./divergence.css";
+
+// Tile geometry: each country is a fixed-size square rather than a projected
+// shape, so there is nothing on the map that draws a border.
+const TILE = 46, GAP = 6, PAD = 10;
+const SIZE = TILE - GAP;
+const VB_W = COLS * TILE + PAD * 2, VB_H = ROWS * TILE + PAD * 2;
+function tx(col) { return PAD + col * TILE; }
+function ty(row) { return PAD + row * TILE; }
 
 // Choropleth fill for the base map — deliberately NOT built from Ember's highlight
 // tokens (amber/orange), which are reserved for interactive/emphasis states.
@@ -12,6 +20,9 @@ function ramp(v) {
   for (const [t, c] of s) if (v < t) return c;
   return "#553E39";
 }
+// Paired with ramp() above — light fills read best with ink text, the two
+// darkest steps of the ramp need a light label instead.
+function tileInk(v) { return v < 0.5 ? "var(--ink)" : "#F7F2EE"; }
 function divOf(code) { return D[code] ? D[code].div : (STATS_ONLY[code] ?? 0.1); }
 
 export default function DivergenceMap({ cards = {}, initialSel = "TH", onOpenDossier }) {
@@ -34,18 +45,24 @@ export default function DivergenceMap({ cards = {}, initialSel = "TH", onOpenDos
     const svg = svgRef.current;
     if (!svg) return;
     let h = "";
-    for (const code in GEO) {
-      const g = GEO[code], live = isLive(code), dim = !hasTheme(code);
-      h += `<path d="${g.d}" fill="${ramp(divOf(code))}" data-c="${code}"
-        class="${live ? "live" : ""} ${dim ? "dim" : ""} ${code === selRef.current && !dim ? "sel" : ""}"
-        ${live ? `tabindex="0" role="button" aria-label="${g.name}"` : ""}></path>`;
+    for (const code in TILES) {
+      const g = TILES[code], live = isLive(code), dim = !hasTheme(code);
+      const fill = ramp(divOf(code));
+      h += `<rect x="${tx(g.col)}" y="${ty(g.row)}" width="${SIZE}" height="${SIZE}" rx="6" fill="${fill}" data-c="${code}"
+        class="tile ${live ? "live" : ""} ${dim ? "dim" : ""} ${code === selRef.current && !dim ? "sel" : ""}"
+        ${live ? `tabindex="0" role="button" aria-label="${g.name}"` : ""}></rect>
+        <text x="${tx(g.col) + SIZE / 2}" y="${ty(g.row) + SIZE / 2}" class="tile-lbl ${dim ? "dim" : ""}"
+        style="fill:${tileInk(divOf(code))}" pointer-events="none">${code}</text>`;
     }
     for (const code in D) {
-      const g = GEO[code];
-      if (g && hasTheme(code)) h += `<rect class="dot" x="${g.cx - 2.4}" y="${g.cy - 2.4}" width="4.8" height="4.8" fill="#1B2236" opacity=".55"/>`;
+      const g = TILES[code];
+      if (g && hasTheme(code)) {
+        const cx = tx(g.col) + SIZE - 6, cy = ty(g.row) + 6;
+        h += `<rect class="dot" x="${cx - 2.6}" y="${cy - 2.6}" width="5.2" height="5.2" rx="1" fill="#1B2236" opacity=".6"/>`;
+      }
     }
     svg.innerHTML = h;
-    svg.querySelectorAll("path.live").forEach((p) => {
+    svg.querySelectorAll("rect.live").forEach((p) => {
       const c = p.dataset.c;
       p.addEventListener("click", () => { selRef.current = c; stageRef.current = {}; drawMap(); drawPanel(); });
       p.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); p.click(); } });
@@ -54,7 +71,7 @@ export default function DivergenceMap({ cards = {}, initialSel = "TH", onOpenDos
         if (!t) return;
         const r = svg.getBoundingClientRect();
         const label = D[c] ? (D[c].tier === "deep" ? "deep dossier" : "standard") : (cards[c] ? "full dossier" : "profile");
-        t.textContent = GEO[c].name + " · " + label;
+        t.textContent = TILES[c].name + " · " + label;
         t.style.left = (e.clientX - r.left + 12) + "px";
         t.style.top = (e.clientY - r.top - 30) + "px";
         t.style.opacity = 1;
@@ -174,7 +191,11 @@ export default function DivergenceMap({ cards = {}, initialSel = "TH", onOpenDos
         <div className="eyebrow"><span className="dot"></span> Data Tool Sprint — internal prototype</div>
       </div>
       <header>
-        <div className="brand"><b>Divergence</b><span>Asia energy narrative map</span></div>
+        <div className="brand">
+          <span className="brand-mark" aria-hidden="true"></span>
+          <b>Ember <span className="brand-product">Divergence</span></b>
+          <span>Asia energy narrative map</span>
+        </div>
         <div className="spacer"></div>
         <div className="ctl">
           <label htmlFor="theme">Theme</label>
@@ -192,8 +213,8 @@ export default function DivergenceMap({ cards = {}, initialSel = "TH", onOpenDos
       </header>
       <main>
         <div className="mapwrap">
-          <svg id="map" ref={svgRef} viewBox="0 0 660 560" preserveAspectRatio="xMidYMid meet" role="img"
-            aria-label="Map of Asia shaded by divergence between official statistics and ground evidence"></svg>
+          <svg id="map" ref={svgRef} viewBox={`0 0 ${VB_W} ${VB_H}`} preserveAspectRatio="xMidYMid meet" role="img"
+            aria-label="Tile grid of Asia, one square per country, shaded by divergence between official statistics and ground evidence"></svg>
           <div className="legend">
             <h4>Divergence index</h4>
             <div className="legend-scale">
@@ -202,6 +223,7 @@ export default function DivergenceMap({ cards = {}, initialSel = "TH", onOpenDos
               <span>Diverging</span>
             </div>
             <p>How far the official record sits from ground evidence. Coloured countries have a profile; click a highlighted one for the full dossier.</p>
+            <p className="legend-note">Schematic tile grid, not a projected map — position is approximate, and there are no borders to dispute.</p>
           </div>
           <div className="tip"></div>
         </div>
