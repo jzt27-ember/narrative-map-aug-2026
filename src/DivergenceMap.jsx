@@ -3,10 +3,14 @@ import { GEO } from "./data/asiaGeo.js";
 import { THEMES, D, STATS_ONLY, CH, CHL } from "./data/asiaDossiers.js";
 import "./divergence.css";
 
+// Choropleth fill for the base map — deliberately NOT built from Ember's highlight
+// tokens (amber/orange), which are reserved for interactive/emphasis states.
+// Uses the neutral-to-fossil-brown family instead, distinct from the renewables-green
+// scale the original clean-electricity map used.
 function ramp(v) {
-  const s = [[0.05, "#EDEEF1"], [0.30, "#FFE8A3"], [0.50, "#FFC400"], [0.70, "#F08A1C"], [1.01, "#ED480D"]];
+  const s = [[0.05, "#EDEEF1"], [0.30, "#D9D3CE"], [0.50, "#B8B0AF"], [0.70, "#857572"], [1.01, "#553E39"]];
   for (const [t, c] of s) if (v < t) return c;
-  return "#ED480D";
+  return "#553E39";
 }
 function divOf(code) { return D[code] ? D[code].div : (STATS_ONLY[code] ?? 0.1); }
 
@@ -38,7 +42,7 @@ export default function DivergenceMap({ cards = {}, initialSel = "TH", onOpenDos
     }
     for (const code in D) {
       const g = GEO[code];
-      if (g && hasTheme(code)) h += `<circle class="dot" cx="${g.cx}" cy="${g.cy}" r="2.4" fill="#1B2236" opacity=".55"/>`;
+      if (g && hasTheme(code)) h += `<rect class="dot" x="${g.cx - 2.4}" y="${g.cy - 2.4}" width="4.8" height="4.8" fill="#1B2236" opacity=".55"/>`;
     }
     svg.innerHTML = h;
     svg.querySelectorAll("path.live").forEach((p) => {
@@ -84,11 +88,11 @@ export default function DivergenceMap({ cards = {}, initialSel = "TH", onOpenDos
     const lv = (n.lev[role] || []).map((l) =>
       `<div class="lev ${l[2] ? "" : "out"}"><span class="mk"></span><div>${l[0]}<div class="who">${l[1]}</div></div></div>`).join("");
     return `<div class="chain">
-      <p class="eyebrow" style="margin-bottom:7px">Where it breaks</p>
+      <p class="eyebrow-label" style="margin-bottom:7px">Where it breaks</p>
       ${rows}
       <div class="detail"><h5>${s[0]} <span style="color:var(--faint);font-weight:400;font-size:12px">· ${CHL[s[2]]}</span> ${code}</h5>
         <p>${s[4]}</p><div class="chips">${s[5].map((e) => `<span class="chip">${e}</span>`).join("")}</div></div>
-      <p class="eyebrow" style="margin:16px 0 2px">Levers</p>${lv || '<p style="font-size:13px;color:var(--muted);padding-top:8px">No levers mapped for this role.</p>'}
+      <p class="eyebrow-label" style="margin:16px 0 2px">Levers</p>${lv || '<p style="font-size:13px;color:var(--muted);padding-top:8px">No levers mapped for this role.</p>'}
     </div>`;
   }
 
@@ -102,7 +106,7 @@ export default function DivergenceMap({ cards = {}, initialSel = "TH", onOpenDos
         const n = D[c].narr.find((x) => x.themes.includes(theme));
         return `<div class="row" data-c="${c}"><span class="c">${D[c].name}</span><span class="g">${n.t} · <span class="mono">${n.code}</span></span></div>`;
       }).join("");
-      p.innerHTML = `<div class="pad"><p class="eyebrow">Theme view</p>
+      p.innerHTML = `<div class="pad"><p class="eyebrow-label">Theme view</p>
         <h2 style="font-size:21px;font-weight:600;letter-spacing:-.02em;margin-top:4px">${THEMES[theme]}</h2>
         <p style="font-size:13.5px;color:var(--muted);margin-top:7px">Countries carrying this narrative. The same claims assemble differently in each.</p>
         <div class="themelist" style="margin-top:14px">${rows}</div></div>
@@ -125,7 +129,7 @@ export default function DivergenceMap({ cards = {}, initialSel = "TH", onOpenDos
           <div class="stats">${st}</div>
           <p style="font-size:11.5px;color:var(--faint);margin-top:7px">Figures grounded in named public sources — see the full dossier.</p>
           <div class="preview-cta">
-            <p class="eyebrow">Full dossier available</p>
+            <p class="eyebrow-label">Full dossier available</p>
             <p style="font-size:13.5px;color:var(--muted);margin-top:6px">${cd.narratives.length} official-record-vs-ground-signal narratives, with levers held vs. outside your mandate.</p>
             <button type="button" class="btn-open" id="open-dossier">Open full dossier →</button>
           </div>
@@ -137,7 +141,7 @@ export default function DivergenceMap({ cards = {}, initialSel = "TH", onOpenDos
     }
 
     const d = D[sel];
-    if (!d) { p.innerHTML = `<div class="pad"><p class="eyebrow">No dossier yet</p></div>`; return; }
+    if (!d) { p.innerHTML = `<div class="pad"><p class="eyebrow-label">No dossier yet</p></div>`; return; }
     const st = d.stats[role].map((s) => `<div class="stat"><div class="k">${s[0]}</div><div class="v mono">${s[1]}</div></div>`).join("");
     const nn = d.narr.map((n, i) => `<details class="narr" ${i === 0 ? "open" : ""}><summary>
         <div class="ntop"><span class="ntitle">${n.t}</span><span class="code mono">${n.code}</span></div>
@@ -149,8 +153,8 @@ export default function DivergenceMap({ cards = {}, initialSel = "TH", onOpenDos
           <span class="tier ${d.tier}">${d.tier === "deep" ? "Deep dossier" : "Standard"}</span></div>
         <div class="stats">${st}</div>
         <p style="font-size:11.5px;color:var(--faint);margin-top:7px">Indicators selected for the ${role === "planner" ? "planning" : "regulatory"} mandate.</p>
-        <p class="eyebrow" style="margin-top:22px">On your board</p>${nn}
-        <p class="eyebrow" style="margin-top:22px">Compared with</p>${pr}
+        <p class="eyebrow-label" style="margin-top:22px">On your board</p>${nn}
+        <p class="eyebrow-label" style="margin-top:22px">Compared with</p>${pr}
       </div>
       <footer>Filled markers are levers this role can sign. Hollow markers sit with another body.<br>
         Prototype — all figures are illustrative placeholders, not queried from verified data.</footer>`;
@@ -166,6 +170,9 @@ export default function DivergenceMap({ cards = {}, initialSel = "TH", onOpenDos
 
   return (
     <div className="divergence-app">
+      <div className="eyebrow-bar">
+        <div className="eyebrow"><span className="dot"></span> Data Tool Sprint — internal prototype</div>
+      </div>
       <header>
         <div className="brand"><b>Divergence</b><span>Asia energy narrative map</span></div>
         <div className="spacer"></div>
@@ -189,8 +196,12 @@ export default function DivergenceMap({ cards = {}, initialSel = "TH", onOpenDos
             aria-label="Map of Asia shaded by divergence between official statistics and ground evidence"></svg>
           <div className="legend">
             <h4>Divergence index</h4>
-            <div className="ramp"><i style={{ background: "#EDEEF1" }}></i><i style={{ background: "#FFE8A3" }}></i><i style={{ background: "#FFC400" }}></i><i style={{ background: "#F08A1C" }}></i><i style={{ background: "#ED480D" }}></i></div>
-            <p>How far the official record sits from ground evidence. Outlined countries have full dossiers.</p>
+            <div className="legend-scale">
+              <span>Aligned</span>
+              <div className="legend-bar" aria-hidden="true"></div>
+              <span>Diverging</span>
+            </div>
+            <p>How far the official record sits from ground evidence. Coloured countries have a profile; click a highlighted one for the full dossier.</p>
           </div>
           <div className="tip"></div>
         </div>
